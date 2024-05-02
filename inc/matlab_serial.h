@@ -41,7 +41,7 @@ typedef enum {
 
 #ifndef NDEBUG
 #define VALUE_CAN_BE_NULL(expression)		assert(expression != NULL);
-#define DATA_TYPE_CAN_BE_ZERO(type)			assert(type == 0);
+#define DATA_TYPE_CAN_BE_ZERO(type)			assert(type != 0);
 #define DATA_TYPE_CAN_BE_NOT_U8(type)		assert(type == 1);
 #define DATA_TYPE_CAN_BE_NOT_U16(type)		assert(type == 2);
 #define DATA_TYPE_CAN_BE_NOT_U32(type)		assert(type == 3);
@@ -72,6 +72,15 @@ typedef enum {
 
 #endif
 
+/**
+ * @brief This function
+ *
+ * This function
+ *
+ * @param a The first integer.
+ * @param b The second integer.
+ * @return The sum of the two integers.
+ */
 status_t matlab_serial_send(
 	matlab_serial_t *object,
 	uint32_t timeout);
@@ -137,6 +146,36 @@ status_t matlab_serial_init_u8(
 	uint8_t *value_pointer,
 	uint8_t start_symbol,
 	uint16_t end_symbol);
+
+/**
+ * @brief This function calculates the sum of two integers.
+ *
+ * This function takes two integers as input and returns their sum.
+ *
+ * @param a The first integer.
+ * @param b The second integer.
+ * @return The sum of the two integers.
+ */
+status_t matlab_serial_init_u8_array(
+	matlab_serial_t *object,
+	UART_HandleTypeDef *interface,
+	uint8_t *array_pointer,
+	uint8_t array_size,
+	uint8_t start_symbol,
+	uint16_t end_symbol);
+
+/**
+ * @brief This function calculates the sum of two integers.
+ *
+ * This function takes two integers as input and returns their sum.
+ *
+ * @param a The first integer.
+ * @param b The second integer.
+ * @return The sum of the two integers.
+ */
+status_t matlab_serial_send_u8(
+	matlab_serial_t *object,
+	uint32_t timeout);
 
 /**
  * @brief This function calculates the sum of two integers.
