@@ -33,9 +33,10 @@ status_t matlab_serial_send(
 }
 
 
-status_t matlab_serial_receive(
+status_t matlab_serial_receive_value(
 	matlab_serial_t *object,
-	uint32_t timeout)
+	uint32_t timeout,
+	uint8_t cast)
 {
 	VALUE_CAN_BE_NULL(object);
 

@@ -159,6 +159,10 @@ typedef enum {
 			int32_t *: matlab_serial_init_i32_array((matlab_serial_t *)&obj, &interface, (int32_t *)&pointer[0], ((uint8_t)sizeof(pointer)/4), start_symbol, end_symbol),\
 			default: END_FUNCTION_WITH_ERROR)
 
+#define matlab_serial_receive(obj, timeout, cast) (void)matlab_serial_receive_value(&obj, timeout, sizeof(cast))
+
+#define matlab_serial_receive_get_casted(obj, timeout, cast) (cast)matlab_serial_receive_value(&obj, timeout, sizeof(cast))
+
 #endif
 
 /**
@@ -182,9 +186,10 @@ status_t matlab_serial_send(
 	matlab_serial_t *object,
 	uint32_t timeout);
 
-status_t matlab_serial_receive(
+status_t matlab_serial_receive_value(
 	matlab_serial_t *object,
-	uint32_t timeout);
+	uint32_t timeout,
+	uint8_t cast_size);
 
 status_t matlab_serial_init_hil(
 	matlab_serial_t *object,
