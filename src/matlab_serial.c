@@ -32,6 +32,136 @@ status_t matlab_serial_send(
 	}
 }
 
+
+status_t matlab_serial_receive(
+	matlab_serial_t *object,
+	uint32_t timeout)
+{
+	VALUE_CAN_BE_NULL(object);
+
+
+#ifdef USE_HAL_DRIVER
+	HAL_UART_Receive(object->interface, (uint8_t *)object->message_buffer_rx,
+			object->buffer_rx_size, timeout);
+#endif /* USE_HAL_DRIVER */
+
+	return STATUS_OK;
+}
+
+/*!
+ * @status TESTING
+ */
+status_t matlab_serial_init_new(
+	matlab_serial_t *object,
+	UART_HandleTypeDef *interface,
+	void *value_pointer,
+	uint8_t value_size,
+	uint8_t start_symbol,
+	uint16_t end_symbol)
+{
+	VALUE_CAN_BE_NULL(object);
+	VALUE_CAN_BE_NULL(interface);
+	VALUE_CAN_BE_NULL(value_pointer);
+
+#ifdef _STDARG_H
+	uint8_t *msg = (uint8_t *)malloc(value_size + 3);
+	MALLOC_CAN_RETURN_NULL(msg);
+#else
+	return LIB_NOT_FOUND;
+#endif
+
+#ifdef _STRING_H_
+	memset(&(*msg), 0x00, (value_size + 3));
+#endif
+	object->interface = interface;
+	object->data_pointer = (void *)value_pointer;
+	object->message_buffer_tx = msg;
+	object->message_buffer_rx = NULL;
+	object->buffer_tx_size = value_size + 3;
+	object->buffer_rx_size = 0;
+	object->start_symbol_buffer = start_symbol;
+	object->end_symbol_buffer[0] = (uint8_t)((end_symbol&0xFF00) >> 8);
+	object->end_symbol_buffer[1] = (uint8_t)(end_symbol&0xFF);
+	// legacy
+//	object->data_operating_type = 7;
+
+	return STATUS_OK;
+}
+
+status_t matlab_serial_send_new(
+	matlab_serial_t *object,
+	uint32_t timeout)
+{
+	VALUE_CAN_BE_NULL(object);
+	// legacy
+	//DATA_TYPE_CAN_BE_NOT_U8(object->data_operating_type);
+
+	// insert start byte
+	object->message_buffer_tx[0] = object->start_symbol_buffer;
+
+	// insert two end bytes
+	object->message_buffer_tx[object->buffer_tx_size - 2] =
+			object->end_symbol_buffer[0];
+	object->message_buffer_tx[object->buffer_tx_size - 1] =
+			object->end_symbol_buffer[1];
+
+	// calculating float numbers and replace to tx buffer
+	for(int i = 0; i < (object->buffer_tx_size - 3); i++)
+	{
+		object->message_buffer_tx[i+1] = (*(((uint8_t *)object->data_pointer) + i));
+	}
+
+#ifdef USE_HAL_DRIVER
+	HAL_UART_Transmit(object->interface, (uint8_t *)object->message_buffer_tx,
+			object->buffer_tx_size, timeout);
+#endif /* USE_HAL_DRIVER */
+	return STATUS_OK;
+}
+
+status_t matlab_serial_init_hil(
+	matlab_serial_t *object,
+	UART_HandleTypeDef *interface,
+	void *value_pointer_tx,
+	uint8_t value_size_tx,
+	void *value_pointer_rx,
+	uint8_t value_size_rx,
+	uint8_t start_symbol,
+	uint16_t end_symbol)
+{
+	VALUE_CAN_BE_NULL(object);
+	VALUE_CAN_BE_NULL(interface);
+	VALUE_CAN_BE_NULL(value_pointer_tx);
+	VALUE_CAN_BE_NULL(value_pointer_rx);
+
+#ifdef _STDARG_H
+	uint8_t *msg_tx = (uint8_t *)malloc(value_size_tx + 3);
+	MALLOC_CAN_RETURN_NULL(msg_tx);
+
+	uint8_t *msg_rx = (uint8_t *)malloc(value_size_rx + 3);
+	MALLOC_CAN_RETURN_NULL(msg_rx);
+#else
+	return LIB_NOT_FOUND;
+#endif
+
+#ifdef _STRING_H_
+	memset(&(*msg_tx), 0x00, (value_size_tx + 3));
+	memset(&(*msg_rx), 0x00, (value_size_rx + 3));
+#endif
+	object->interface = interface;
+	object->data_pointer = (void *)value_pointer_tx;
+	object->message_buffer_tx = msg_tx;
+	object->message_buffer_rx = msg_rx;
+	object->buffer_tx_size = value_size_tx + 3;
+	object->buffer_rx_size = value_size_rx + 3;
+	object->start_symbol_buffer = start_symbol;
+	object->end_symbol_buffer[0] = (uint8_t)((end_symbol&0xFF00) >> 8);
+	object->end_symbol_buffer[1] = (uint8_t)(end_symbol&0xFF);
+	// legacy
+//	object->data_operating_type = 7;
+
+	return STATUS_OK;
+}
+
 /*!
  * 	@status TESTED ON TARGET
  * 	@result COMPLETED

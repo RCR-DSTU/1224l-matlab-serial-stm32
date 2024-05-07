@@ -57,6 +57,7 @@ typedef struct {
 #ifndef ROBOTIC_LIBRARY_STATIC
 #include "stdlib.h"
 #include "string.h"
+#include "stdarg.h"
 
 /*!
  * Function states table
@@ -69,11 +70,13 @@ typedef enum {
 	SENDING_ERROR = 0x4,
 	RECEIVING_ERROR = 0x5,
 	ALLOCATE_ERROR = 0x6,
+	LIB_NOT_FOUND = 0x7,
 	END_FUNCTION_WITH_ERROR = 0xF,
 }status_t;
 
 #ifndef NDEBUG
-#define VALUE_CAN_BE_NULL(expression)		assert(expression != NULL)
+#define VALUE_CAN_BE_NULL(value)			assert(value != NULL)
+#define VA_ARGS_SIZE_CAN_BE_INVALID(args)	assert(args != 0)
 #define DATA_TYPE_CAN_BE_ZERO(type)			assert(type != 0)
 #define DATA_TYPE_CAN_BE_NOT_U8(type)		assert(type == 1)
 #define DATA_TYPE_CAN_BE_NOT_I8(type)		assert(type == 2)
@@ -121,6 +124,10 @@ typedef enum {
 			int16_t *: matlab_serial_init_i16((matlab_serial_t *)&obj, &interface, (int16_t *)&pointer, start_symbol, end_symbol),\
 			int32_t *: matlab_serial_init_i32((matlab_serial_t *)&obj, &interface, (int32_t *)&pointer, start_symbol, end_symbol),\
 			default: END_FUNCTION_WITH_ERROR)
+
+#define matlab_serial_attach_rx(obj, buff) matlab_serial_allocate_rx(&obj, (void*)&buff, sizeof(buff));
+
+#define matlab_serial_attach_tx(obj, buff) matlab_serial_allocate_tx(&obj, (void *)&buff, sizeof(buff));
 
 /*!
  * Override function matlab_serial_init_array for various types
@@ -172,6 +179,42 @@ typedef enum {
  * @return status_t: function result
  */
 status_t matlab_serial_send(
+	matlab_serial_t *object,
+	uint32_t timeout);
+
+status_t matlab_serial_receive(
+	matlab_serial_t *object,
+	uint32_t timeout);
+
+status_t matlab_serial_init_hil(
+	matlab_serial_t *object,
+	UART_HandleTypeDef *interface,
+	void *value_pointer_tx,
+	uint8_t value_size_tx,
+	void *value_pointer_rx,
+	uint8_t value_size_rx,
+	uint8_t start_symbol,
+	uint16_t end_symbol);
+
+status_t matlab_serial_allocate_rx(
+	matlab_serial_t *object,
+	void *pointer,
+	uint8_t buffer_size);
+
+status_t matlab_serial_allocate_tx(
+	matlab_serial_t *object,
+	void *pointer,
+	uint8_t buffer_size);
+
+status_t matlab_serial_init_new(
+	matlab_serial_t *object,
+	UART_HandleTypeDef *interface,
+	void *value_pointer,
+	uint8_t value_size,
+	uint8_t start_symbol,
+	uint16_t end_symbol);
+
+status_t matlab_serial_send_new(
 	matlab_serial_t *object,
 	uint32_t timeout);
 
