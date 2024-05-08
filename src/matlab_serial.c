@@ -32,11 +32,13 @@ status_t matlab_serial_send(
 	return STATUS_OK;
 }
 
-
-status_t matlab_serial_receive_cast_common(
+/*!
+ * 	@status TESTING
+ * 	@result DEVELOPING
+ */
+status_t matlab_serial_receive_common(
 	matlab_serial_t *object,
-	uint32_t timeout,
-	uint8_t cast)
+	uint32_t timeout)
 {
 	VALUE_CAN_BE_NULL(object);
 
@@ -46,9 +48,26 @@ status_t matlab_serial_receive_cast_common(
 								object->buffer_rx_size, timeout);
 
 	if(response != HAL_OK) return RECEIVING_ERROR;
-
+#else /* USE_HAL_DRIVER */
+	// todo CMSIS
 #endif /* USE_HAL_DRIVER */
 
+	uint8_t *start_buffer_pos = object->message_buffer_rx;
+	uint8_t *end_buffer_pos = object->message_buffer_rx + (object->buffer_rx_size-1);
+
+	// validating buffer frame start, end symbols
+	if((*start_buffer_pos == object->start_symbol_buffer) &&
+	   ((*(end_buffer_pos - 1)) == object->end_symbol_buffer[0]) &&
+	   ((*end_buffer_pos) == object->end_symbol_buffer[1]))
+	{
+		uint8_t *data_buffer_pos = object->message_buffer_rx + 1;
+		// byte swap from incoming buffer to value storage
+		for(int i = 0; i < (object->buffer_rx_size - 3); i++)
+		{
+			*((uint8_t *)object->data_rx_pointer++) = *data_buffer_pos++;
+		}
+	}
+	else return INVALID_RECEIVED_DATA_FRAME;
 	return STATUS_OK;
 }
 

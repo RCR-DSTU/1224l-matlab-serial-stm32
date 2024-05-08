@@ -59,6 +59,7 @@ typedef enum {
 	RECEIVING_ERROR = 0x5,
 	ALLOCATE_ERROR = 0x6,
 	LIB_NOT_FOUND = 0x7,
+	INVALID_RECEIVED_DATA_FRAME = 0x8,
 	END_FUNCTION_WITH_ERROR = 0xF,
 }status_t;
 
@@ -74,7 +75,12 @@ typedef enum {
 #endif /* NDEBUG */
 
 /*!
- * General function matlab_serial_init for various types
+ * General function matlab_serial_init for various
+ * types. Only transmit. Can transmit
+ * and receive data. This macro automatically
+ * extracts a pointer to the arguments for
+ * simplified user invocation. Necessary values
+ * can be single variable or vector and matrix.
  *
  * Usage example
  *
@@ -97,7 +103,12 @@ typedef enum {
 										(void *)&pointer, (uint8_t)sizeof(pointer))
 
 /*!
- * General function matlab_serial_init for various types
+ * General function matlab_serial_init_hil for
+ * hardware-in-the-loop systems. Can transmit
+ * and receive data. This macro automatically
+ * extracts a pointer to the arguments for
+ * simplified user invocation. Necessary values
+ * can be single variable or vector and matrix.
  *
  * Usage example
  *
@@ -107,12 +118,16 @@ typedef enum {
  * 2) Create matlab_serial_t object
  * 		matlab_serial_t object;
  *
- * 3) Create value buffer with necessary type
+ * 3) Create transmit value buffer with necessary type
  * 		float value; //example #1
  * 		float value[3];  //example #2
  *
- * 4) Call matlab_serial_init macro
- * 		matlab_serial_init(object, huart1, value, 0x3A, 0x0D0A);
+ * 4) Create receive value buffer with necessary type
+ * 		float result; //example #1
+ * 		float result[3]; // example #2
+ *
+ * 5) Call matlab_serial_init_hil macro
+ * 		matlab_serial_init_hil(object, huart1, 0x3A, 0x0D0A, value, result);
  */
 #define matlab_serial_init_hil(obj, interface, start_symbol, end_symbol, pointer_tx, pointer_rx)\
 		matlab_serial_init_hil_common((matlab_serial_t *)&obj, (UART_HandleTypeDef *)&interface,\
@@ -120,14 +135,38 @@ typedef enum {
 										(void *)&pointer_tx, (uint8_t) sizeof(pointer_tx),\
 										(void *)&pointer_rx, (uint8_t) sizeof(pointer_rx))
 
-
+/*!
+ * This macro may be required when
+ * you want to reassign a monitored
+ * variable to be received from Simulink.
+ * This macro automatically extracts
+ * a pointer to the arguments for
+ * simplified user invocation. Necessary
+ * values can be single variable or
+ * vector and matrix.
+ *
+ * Usage example
+ *
+ *
+ */
 #define matlab_serial_attach_rx(obj, buff) matlab_serial_allocate_rx(&obj, (void*)&buff, sizeof(buff));
 
+
+/*!
+ * This macro may be required when
+ * you want to reassign a monitored
+ * variable to be sent to Simulink.
+ * This macro automatically extracts
+ * a pointer to the arguments for
+ * simplified user invocation. Necessary
+ * values can be single variable or
+ * vector and matrix.
+ *
+ * Usage example
+ *
+ *
+ */
 #define matlab_serial_attach_tx(obj, buff) matlab_serial_allocate_tx(&obj, (void *)&buff, sizeof(buff));
-
-#define matlab_serial_receive(obj, timeout, cast) (void)matlab_serial_receive_value(&obj, timeout, sizeof(cast))
-
-#define matlab_serial_receive_get_casted(obj, timeout, cast) (cast)matlab_serial_receive_value(&obj, timeout, sizeof(cast))
 
 #endif
 
@@ -152,10 +191,9 @@ status_t matlab_serial_send(
 	matlab_serial_t *object,
 	uint32_t timeout);
 
-status_t matlab_serial_receive_cast_common(
-	matlab_serial_t *object,
-	uint32_t timeout,
-	uint8_t cast_size);
+ status_t matlab_serial_receive_common(
+ 	matlab_serial_t *object,
+ 	uint32_t timeout);
 
 status_t matlab_serial_init_hil_common(
 	matlab_serial_t *object,
@@ -185,7 +223,7 @@ status_t matlab_serial_init_common(
 	void *value_pointer,
 	uint8_t value_size);
 
-status_t matlab_serial_send_new(
+status_t matlab_serial_send(
 	matlab_serial_t *object,
 	uint32_t timeout);
 
