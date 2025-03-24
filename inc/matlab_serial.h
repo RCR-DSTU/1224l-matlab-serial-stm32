@@ -18,7 +18,7 @@
 #ifdef USE_HAL_DRIVER
 #if defined(STM32F407xx) || defined(STM32F401xC) || defined(STM32F411xE)
 #include "stm32f4xx_hal.h"
-#elif defined(STM32F103xx)
+#elif defined(STM32F103xx) || defined(STM32F103xB)
 #include "stm32f1xx_hal.h"
 #endif
 
@@ -28,8 +28,10 @@ typedef struct {
 	uint8_t	buffer_tx_size;
 	uint8_t *message_buffer_rx;
 	uint8_t	buffer_rx_size;
-	uint8_t start_symbol_buffer;
-	uint8_t end_symbol_buffer[2];
+	uint8_t start_symbol_buffer_tx;
+	uint8_t start_symbol_buffer_rx;	
+	uint8_t end_symbol_buffer_tx[2];
+	uint8_t end_symbol_buffer_rx[2];
 	/* data pointers */
 	void *data_tx_pointer;
 	void *data_rx_pointer;
@@ -61,13 +63,13 @@ typedef enum {
 	LIB_NOT_FOUND = 0x7,
 	INVALID_RECEIVED_DATA_FRAME = 0x8,
 	END_FUNCTION_WITH_ERROR = 0xF,
-}status_t;
+}matlab_status_t;
 
 #ifndef NDEBUG
-#define VALUE_CAN_BE_NULL(value)			assert(value != NULL)
-#define VA_ARGS_SIZE_CAN_BE_INVALID(args)	assert(args != 0)
-#define DATA_TYPE_CAN_BE_ZERO(type)			assert(type != 0)
-#define MALLOC_CAN_RETURN_NULL(result)		assert(result != NULL)
+#define VALUE_CAN_BE_NULL(value)			assert_param(value != NULL)
+#define VA_ARGS_SIZE_CAN_BE_INVALID(args)	assert_param(args != 0)
+#define DATA_TYPE_CAN_BE_ZERO(type)			assert_param(type != 0)
+#define MALLOC_CAN_RETURN_NULL(result)		assert_param(result != NULL)
 #else /* NDEBUG */
 #define VALUE_CAN_BE_NULL(expression)	do {if(expression == NULL) return OBJECT_NULL;} while(0)
 #define DATA_TYPE_CAN_BE_ZERO(type)		do {if(type == 0) return INVALID_DATA_TYPE;} while(0)
@@ -151,7 +153,6 @@ typedef enum {
  */
 #define matlab_serial_attach_rx(obj, buff) matlab_serial_allocate_rx(&obj, (void*)&buff, sizeof(buff));
 
-
 /*!
  * This macro may be required when
  * you want to reassign a monitored
@@ -173,29 +174,33 @@ typedef enum {
 /**
  * @brief This function send data with selected data type
  *
- * This function call one of other function:
- * 		matlab_serial_send_f32,
- * 		matlab_serial_send_u8,
- * 		matlab_serial_send_i8,
- * 		matlab_serial_send_u16,
- * 		matlab_serial_send_i16,
- * 		matlab_serial_send_u32,
- * 		matlab_serial_send_i32,
- *
  * @param object: matlab_serial_t object pointer.
  * @param timeout:  transmission timeout in milliseconds.
  *
- * @return status_t: function result
+ * @return matlab_status_t: function result
  */
-status_t matlab_serial_send(
+matlab_status_t matlab_serial_send(
 	matlab_serial_t *object,
 	uint32_t timeout);
 
- status_t matlab_serial_receive_common(
- 	matlab_serial_t *object,
- 	uint32_t timeout);
+/**
+ * @brief Receiving function
+ */
+matlab_status_t matlab_serial_receive(
+	matlab_serial_t *object,
+	uint32_t timeout);
 
-status_t matlab_serial_init_hil_common(
+/**
+ * @brief Simple send/receive function
+ */
+matlab_status_t matlab_serial_tick(
+	matlab_serial_t *object,
+	uint32_t timeout);
+
+matlab_status_t matlab_serial_parse_rx(
+	matlab_serial_t *object);
+
+matlab_status_t matlab_serial_init_hil_common(
 	matlab_serial_t *object,
 	UART_HandleTypeDef *interface,
 	uint8_t start_symbol,
@@ -205,17 +210,7 @@ status_t matlab_serial_init_hil_common(
 	void *value_pointer_rx,
 	uint8_t value_size_rx);
 
-status_t matlab_serial_allocate_rx(
-	matlab_serial_t *object,
-	void *pointer,
-	uint8_t buffer_size);
-
-status_t matlab_serial_allocate_tx(
-	matlab_serial_t *object,
-	void *pointer,
-	uint8_t buffer_size);
-
-status_t matlab_serial_init_common(
+matlab_status_t matlab_serial_init_common(
 	matlab_serial_t *object,
 	UART_HandleTypeDef *interface,
 	uint8_t start_symbol,
@@ -223,10 +218,15 @@ status_t matlab_serial_init_common(
 	void *value_pointer,
 	uint8_t value_size);
 
-status_t matlab_serial_send(
-	matlab_serial_t *object,
-	uint32_t timeout);
-
+	matlab_status_t matlab_serial_allocate_rx(
+		matlab_serial_t *object,
+		void *pointer,
+		uint8_t buffer_size);
+	
+	matlab_status_t matlab_serial_allocate_tx(
+		matlab_serial_t *object,
+		void *pointer,
+		uint8_t buffer_size);
 
 /**
  * @brief This function finish working with object and free allocated memory
@@ -239,10 +239,10 @@ status_t matlab_serial_send(
  *
  * @param object: matlab_serial_t object pointer.
  *
- * @return status_t: function result
+ * @return matlab_status_t: function result
  *
  */
-status_t matlab_serial_finish(matlab_serial_t *object);
+matlab_status_t matlab_serial_finish(matlab_serial_t *object);
 
 
 #endif /* USE_HAL_DRIVER */
